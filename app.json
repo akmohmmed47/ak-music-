@@ -13,7 +13,7 @@
       "backgroundColor": "#0A0A0A"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.ak.music",
       "infoPlist": {
         "UIBackgroundModes": [
@@ -21,7 +21,7 @@
         ],
         "NSDocumentsFolderUsageDescription": "Access your music files from the Files app",
         "NSMusicUsageDescription": "Access your local music files",
-        "ITSAppUsesNonExemptEncryption": true 
+        "ITSAppUsesNonExemptEncryption": false 
       }
     },
     "android": {
@@ -45,7 +45,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": true,
+          "microphonePermission": false,
           "enableBackgroundPlayback": true
         }
       ],
