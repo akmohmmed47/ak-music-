@@ -1,10 +1,16 @@
 {
-  "buildCommand": null,
-  "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "source": "/((?!_expo|assets|.*\\..*).*)",
-      "destination": "/index.html"
+      "source": "/(.*).bundle",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
+      ]
     }
   ]
 }
