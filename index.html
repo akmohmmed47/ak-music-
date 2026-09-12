@@ -1,1 +1,183 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#080808">
+  <title>AK Music</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#080808;--surface:rgba(255,255,255,0.05);--border:rgba(255,255,255,0.08);
+      --grad:linear-gradient(135deg,#A855F7,#EC4899);--accent1:#A855F7;
+      --text:#FFF;--text-dim:rgba(255,255,255,0.45);--text-faint:rgba(255,255,255,0.18);
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+    .app{display:flex;flex-direction:column;height:100vh;height:-webkit-fill-available;max-width:430px;margin:0 auto}
+    .glow{position:fixed;top:-80px;left:50%;transform:translateX(-50%);width:340px;height:340px;background:radial-gradient(circle,rgba(168,85,247,0.12) 0%,transparent 70%);pointer-events:none;z-index:0}
+    .header{padding:max(env(safe-area-inset-top),48px) 24px 16px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+    .logo{font-size:22px;font-weight:700;letter-spacing:-0.5px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .add-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px}
+    .player-section{padding:4px 24px 0;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+    .vinyl-wrap{position:relative;width:180px;height:180px;margin-bottom:20px}
+    .vinyl{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 50% 50%,#111 0%,#111 14%,transparent 15%),repeating-radial-gradient(circle at 50% 50%,#181818 0px,#212121 3px,#161616 6px,#1e1e1e 9px);box-shadow:0 0 0 2px rgba(168,85,247,0.25),0 16px 48px rgba(0,0,0,0.9);animation:spin 5s linear infinite;animation-play-state:paused}
+    .vinyl.playing{animation-play-state:running}
+    .vinyl-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    .now-playing{text-align:center;margin-bottom:18px;width:100%}
+    .track-name{font-size:17px;font-weight:600;letter-spacing:-0.3px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
+    .track-sub{font-size:13px;color:var(--text-dim)}
+    .progress-wrap{width:100%;margin-bottom:14px}
+    .progress-track{width:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:99px;cursor:pointer;margin-bottom:8px;position:relative}
+    .progress-fill{height:100%;background:var(--grad);border-radius:99px;width:0%;position:relative;transition:width 0.4s linear}
+    .progress-fill::after{content:'';position:absolute;right:-4px;top:-3px;width:9px;height:9px;border-radius:50%;background:white;box-shadow:0 0 8px rgba(168,85,247,0.8)}
+    .time-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)}
+    .controls{display:flex;align-items:center;gap:18px;margin-bottom:10px}
+    .ctrl-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px}
+    .ctrl-btn.active{color:var(--accent1)}
+    .play-btn{width:58px;height:58px;border-radius:50%;background:var(--grad);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 24px rgba(168,85,247,0.45)}
+    .queue-section{flex:1;padding:6px 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1}
+    .queue-section::-webkit-scrollbar{width:0}
+    .queue-label{font-size:11px;font-weight:500;color:var(--text-faint);letter-spacing:0.8px;text-transform:uppercase;padding:0 8px;margin-bottom:6px}
+    .song-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+    .song-item:active{background:var(--surface)}
+    .song-item.active{background:var(--surface);border-color:var(--border)}
+    .song-idx{width:18px;text-align:center;font-size:12px;color:var(--text-faint);flex-shrink:0}
+    .song-item.active .song-idx{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700}
+    .song-info{flex:1;min-width:0}
+    .song-title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .song-item.active .song-title{color:var(--accent1)}
+    .empty-state{display:flex;flex-direction:column;align-items:center;padding:24px 24px 8px;gap:10px;text-align:center}
+    .empty-icon{font-size:40px;opacity:0.25}
+    .empty-text{font-size:14px;color:var(--text-dim);line-height:1.5}
+    .empty-cta{margin-top:6px;padding:11px 24px;background:var(--grad);border:none;border-radius:99px;color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+    .built-by{text-align:center;font-size:10px;color:var(--text-faint);padding:8px 0 max(env(safe-area-inset-bottom),12px)}
+    #file-input{display:none}
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="app">
+    <input type="file" id="file-input" multiple>
+    <div class="header">
+      <span class="logo">AK Music</span>
+      <button class="add-btn" onclick="document.getElementById('file-input').click()">+</button>
+    </div>
+    <div class="player-section">
+      <div class="vinyl-wrap">
+        <div class="vinyl" id="vinyl"><div class="vinyl-center">AK</div></div>
+      </div>
+      <div class="now-playing">
+        <div class="track-name" id="track-name">No song selected</div>
+        <div class="track-sub" id="track-sub">Tap + to add music</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track" id="prog-track">
+          <div class="progress-fill" id="prog-fill"></div>
+        </div>
+        <div class="time-row"><span id="t-cur">0:00</span><span id="t-total">0:00</span></div>
+      </div>
+      <div class="controls">
+        <button class="ctrl-btn" id="shuf-btn" onclick="toggleShuffle()">&#x21C4;</button>
+        <button class="ctrl-btn" onclick="prevSong()">&#x23EE;</button>
+        <button class="play-btn" id="play-btn" onclick="togglePlay()">&#x25B6;</button>
+        <button class="ctrl-btn" onclick="nextSong()">&#x23ED;</button>
+        <button class="ctrl-btn" id="rep-btn" onclick="toggleRepeat()">&#x21BA;</button>
+      </div>
+    </div>
+    <div class="queue-section">
+      <div class="queue-label">Library</div>
+      <div id="song-list">
+        <div class="empty-state">
+          <div class="empty-icon">&#127925;</div>
+          <div class="empty-text">Tap <b>+</b> then Browse<br>and select your MP3 files.</div>
+          <button class="empty-cta" onclick="document.getElementById('file-input').click()">Add Music</button>
+        </div>
+      </div>
+    </div>
+    <div class="built-by">Built by Ak</div>
+  </div>
+  <audio id="aud"></audio>
+  <script>
+    var songs=[],cur=-1,playing=false,shuffle=false,repeat=false;
+    var aud=document.getElementById('aud'),vinyl=document.getElementById('vinyl'),
+        playBtn=document.getElementById('play-btn'),tName=document.getElementById('track-name'),
+        tSub=document.getElementById('track-sub'),pFill=document.getElementById('prog-fill'),
+        tCur=document.getElementById('t-cur'),tTotal=document.getElementById('t-total'),
+        list=document.getElementById('song-list');
+
+    document.getElementById('file-input').addEventListener('change',function(e){
+      Array.from(e.target.files).forEach(function(f){
+        songs.push({name:f.name.replace(/\.[^/.]+$/,''),url:URL.createObjectURL(f)});
+      });
+      renderList();
+      if(cur===-1&&songs.length)load(0);
+      e.target.value='';
+    });
+
+    function renderList(){
+      if(!songs.length){
+        list.innerHTML='<div class="empty-state"><div class="empty-icon">&#127925;</div><div class="empty-text">Tap <b>+</b> and pick your MP3s.</div><button class="empty-cta" onclick="document.getElementById(\'file-input\').click()">Add Music</button></div>';
+        return;
+      }
+      list.innerHTML=songs.map(function(s,i){
+        return '<div class="song-item'+(i===cur?' active':'')+'\" onclick="load('+i+')">'+
+          '<div class="song-idx">'+(i===cur?'&#9835;':(i+1))+'</div>'+
+          '<div class="song-info"><div class="song-title">'+escHtml(s.name)+'</div></div>'+
+          '</div>';
+      }).join('');
+    }
+
+    function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+    function load(i){
+      if(i<0||i>=songs.length)return;
+      cur=i; aud.src=songs[i].url;
+      tName.textContent=songs[i].name;
+      tSub.textContent='Song '+(i+1)+' of '+songs.length;
+      renderList();
+      aud.play().catch(function(){});
+    }
+
+    function togglePlay(){
+      if(!songs.length){document.getElementById('file-input').click();return;}
+      if(cur===-1){load(0);return;}
+      if(playing)aud.pause(); else aud.play().catch(function(){});
+    }
+
+    function nextSong(){
+      if(!songs.length)return;
+      load(shuffle?Math.floor(Math.random()*songs.length):(cur+1)%songs.length);
+    }
+
+    function prevSong(){
+      if(!songs.length)return;
+      if(aud.currentTime>3){aud.currentTime=0;return;}
+      load((cur-1+songs.length)%songs.length);
+    }
+
+    function toggleShuffle(){shuffle=!shuffle;document.getElementById('shuf-btn').classList.toggle('active',shuffle);}
+    function toggleRepeat(){repeat=!repeat;aud.loop=repeat;document.getElementById('rep-btn').classList.toggle('active',repeat);}
+
+    aud.addEventListener('play',function(){playing=true;playBtn.innerHTML='&#x23F8;';vinyl.classList.add('playing');});
+    aud.addEventListener('pause',function(){playing=false;playBtn.innerHTML='&#x25B6;';vinyl.classList.remove('playing');});
+    aud.addEventListener('ended',function(){if(!repeat)nextSong();});
+    aud.addEventListener('timeupdate',function(){
+      if(!aud.duration)return;
+      pFill.style.width=(aud.currentTime/aud.duration*100)+'%';
+      tCur.textContent=fmt(aud.currentTime);
+      tTotal.textContent=fmt(aud.duration);
+    });
+    document.getElementById('prog-track').addEventListener('click',function(e){
+      if(!aud.duration)return;
+      var r=e.currentTarget.getBoundingClientRect();
+      aud.currentTime=((e.clientX-r.left)/r.width)*aud.duration;
+    });
+    function fmt(s){var m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec;}
+  </script>
+</body>
+</html>
