@@ -22,6 +22,8 @@
     .logo{font-size:22px;font-weight:700;letter-spacing:-0.5px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
     .add-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;transition:transform 0.15s ease}
     .add-btn:active{transform:scale(0.92)}
+    .file-input-wrapper{position:relative;overflow:hidden;display:inline-block}
+    #file-input{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
     .player-section{padding:4px 24px 0;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
     .vinyl-wrap{position:relative;width:180px;height:180px;margin-bottom:20px}
     .vinyl{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 50% 50%,#111 0%,#111 14%,transparent 15%),repeating-radial-gradient(circle at 50% 50%,#181818 0px,#212121 3px,#161616 6px,#1e1e1e 9px);box-shadow:0 0 0 2px rgba(168,85,247,0.25),0 16px 48px rgba(0,0,0,0.9);animation:spin 5s linear infinite;animation-play-state:paused}
@@ -58,16 +60,19 @@
     .empty-cta{margin-top:6px;padding:11px 24px;background:var(--grad);border:none;border-radius:99px;color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:transform 0.15s ease}
     .empty-cta:active{transform:scale(0.96)}
     .built-by{text-align:center;font-size:10px;color:var(--text-faint);padding:8px 0 max(env(safe-area-inset-bottom),12px)}
-    #file-input{display:none}
+    .hint-text{font-size:10px;color:var(--text-faint);text-align:center;padding:4px 8px}
   </style>
 </head>
 <body>
   <div class="glow"></div>
   <div class="app">
-    <input type="file" id="file-input" multiple accept="audio/*">
     <div class="header">
       <span class="logo">AK Music</span>
-      <button class="add-btn" onclick="document.getElementById('file-input').click()">+</button>
+      <label class="file-input-wrapper add-btn">
+        +
+        <!-- ✅ iOS-க்கு சரியான accept மதிப்பு -->
+        <input type="file" id="file-input" multiple accept=".mp3,.m4a,.wav,.ogg,.flac,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/flac">
+      </label>
     </div>
     <div class="player-section">
       <div class="vinyl-wrap">
@@ -96,8 +101,12 @@
       <div id="song-list">
         <div class="empty-state">
           <div class="empty-icon">&#127925;</div>
-          <div class="empty-text">Tap <b>+</b> then Browse<br>and select your MP3 files.</div>
-          <button class="empty-cta" onclick="document.getElementById('file-input').click()">Add Music</button>
+          <div class="empty-text">Tap <b>+</b> then select<br>audio files from your iPhone.</div>
+          <div class="hint-text">📁 Choose "On My iPhone" folder</div>
+          <label class="empty-cta file-input-wrapper">
+            Add Music
+            <input type="file" id="file-input-cta" multiple accept=".mp3,.m4a,.wav,.ogg,.flac,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/flac">
+          </label>
         </div>
       </div>
     </div>
@@ -112,21 +121,30 @@
         tCur = document.getElementById('t-cur'), tTotal = document.getElementById('t-total'),
         list = document.getElementById('song-list');
 
-    document.getElementById('file-input').addEventListener('change', function(e) {
-      Array.from(e.target.files).forEach(function(f) {
-        songs.push({ 
-          name: escHtml(f.name.replace(/\.[^/.]+$/, '')), 
-          url: URL.createObjectURL(f) 
+    // ✅ இரண்டு input-க்கும் ஒரே வேலை செய்ய
+    function setupInput(input) {
+      input.addEventListener('change', function(e) {
+        // ✅ தேர்ந்தெடுக்கும் முன் value-ஐ அழி — மீண்டும் அதே பைலைத் தேர்ந்தெடுத்தாலும் வேலை செய்யும்
+        if (!e.target.files.length) return;
+        Array.from(e.target.files).forEach(function(f) {
+          songs.push({ 
+            name: escHtml(f.name.replace(/\.[^/.]+$/, '')), 
+            url: URL.createObjectURL(f) 
+          });
         });
+        renderList();
+        if (cur === -1 && songs.length) load(0);
+        e.target.value = '';
       });
-      renderList();
-      if (cur === -1 && songs.length) load(0);
-      e.target.value = '';
-    });
+    }
+
+    setupInput(document.getElementById('file-input'));
+    setupInput(document.getElementById('file-input-cta'));
 
     function renderList() {
       if (!songs.length) {
-        list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#127925;</div><div class="empty-text">Tap <b>+</b> and pick your MP3s.</div><button class="empty-cta" onclick="document.getElementById(\'file-input\').click()">Add Music</button></div>';
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#127925;</div><div class="empty-text">Tap <b>+</b> then select<br>audio files from your iPhone.</div><div class="hint-text">📁 Choose "On My iPhone" folder</div><label class="empty-cta file-input-wrapper">Add Music<input type="file" id="file-input-cta" multiple accept=".mp3,.m4a,.wav,.ogg,.flac,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/flac"></label></div>';
+        setupInput(document.getElementById('file-input-cta'));
         return;
       }
       list.innerHTML = songs.map(function(s, i) {
@@ -152,7 +170,10 @@
     }
 
     function togglePlay() {
-      if (!songs.length) { document.getElementById('file-input').click(); return; }
+      if (!songs.length) { 
+        document.getElementById('file-input').click(); 
+        return; 
+      }
       if (cur === -1) { load(0); return; }
       if (playing) { aud.pause(); } 
       else { aud.play().catch(function(err) { console.log('Play blocked:', err); }); }
